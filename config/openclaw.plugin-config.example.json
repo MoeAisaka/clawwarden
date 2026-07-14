@@ -1,0 +1,18 @@
+{
+  "plugins": {
+    "entries": {
+      "clawwarden-runtime": {
+        "enabled": true,
+        "config": {
+          "pythonPath": "python3",
+          "scriptPath": "/absolute/path/to/clawwarden/scripts/control_plane.py",
+          "enqueueTimeoutMs": 2000,
+          "capturePrompt": false,
+          "captureSummary": false,
+          "maxPromptChars": 8000,
+          "maxSummaryChars": 6000
+        }
+      }
+    }
+  }
+}

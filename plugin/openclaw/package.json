@@ -1,0 +1,19 @@
+{
+  "name": "clawwarden-runtime",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Durable OpenClaw lifecycle bridge for Clawwarden",
+  "main": "src/index.js",
+  "openclaw": {
+    "extensions": [
+      "./src/index.js"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.7.1-beta.2"
+    }
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

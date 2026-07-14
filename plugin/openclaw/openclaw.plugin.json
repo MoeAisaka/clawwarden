@@ -1,0 +1,52 @@
+{
+  "id": "clawwarden-runtime",
+  "name": "Clawwarden Runtime",
+  "description": "Durably enqueue OpenClaw lifecycle events for unattended Clawwarden processing.",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true
+      },
+      "pythonPath": {
+        "type": "string",
+        "default": "python3"
+      },
+      "scriptPath": {
+        "type": "string",
+        "description": "Optional absolute path to scripts/control_plane.py. Defaults to the copy bundled with this repository."
+      },
+      "enqueueTimeoutMs": {
+        "type": "integer",
+        "minimum": 250,
+        "maximum": 5000,
+        "default": 2000
+      },
+      "capturePrompt": {
+        "type": "boolean",
+        "description": "Persist clipped raw prompts in the local event database. Disabled by default because prompts can contain private data.",
+        "default": false
+      },
+      "captureSummary": {
+        "type": "boolean",
+        "description": "Persist clipped assistant summaries in the local event database. Disabled by default because summaries can contain private data.",
+        "default": false
+      },
+      "maxPromptChars": {
+        "type": "integer",
+        "minimum": 1000,
+        "maximum": 20000,
+        "default": 8000
+      },
+      "maxSummaryChars": {
+        "type": "integer",
+        "minimum": 1000,
+        "maximum": 20000,
+        "default": 6000
+      }
+    }
+  }
+}
