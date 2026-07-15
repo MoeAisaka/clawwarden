@@ -49,7 +49,7 @@ Optional nmem, workflow, skill and artifact integrations
 - macOS or Linux with `fcntl`
 - Optional: nmem
 
-The current plugin compatibility floor is OpenClaw `2026.7.1-beta.2`; this tree was tested with `2026.7.1-beta.6`.
+The current plugin compatibility floor is OpenClaw `2026.7.1-beta.2`; this tree was tested with the stable OpenClaw `2026.7.1` release.
 
 ## Quick start
 
