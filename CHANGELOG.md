@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Documentation
+
+- Record compatibility validation against the stable OpenClaw `2026.7.1` release.
+
 ### Added
 
 - Durable SQLite WAL event inbox with leases, bounded retry and dead letters.
