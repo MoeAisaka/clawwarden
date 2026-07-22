@@ -71,6 +71,8 @@ Copy the OpenClaw plugin configuration example and set `scriptPath` to this repo
 
 Missing optional integrations degrade to `disabled`; they do not silently trigger a fallback model or external service.
 
+When a periodic event recovers, Clawwarden resolves an older dead-letter alert only when the successful event has the same type and a newer creation timestamp. Unrelated alerts remain active.
+
 ## Commit and push gate
 
 ```bash

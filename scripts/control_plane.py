@@ -198,8 +198,8 @@ def normalized_memory_signal(value):
 
 
 def low_information_memory_reason(title="", content=""):
-    for value in (title, content):
-        normalized = normalized_memory_signal(value)
+    normalized_values = [normalized_memory_signal(value) for value in (title, content)]
+    for normalized in normalized_values:
         if normalized in LOW_INFORMATION_MEMORY_MARKERS:
             return "low_information_marker:%s" % normalized
         if (
@@ -208,6 +208,15 @@ def low_information_memory_reason(title="", content=""):
             and any(marker in normalized for marker in ("gpt", "token", "nmem", "模型", "成本", "付费", "免费", "📊"))
         ):
             return "low_information_telemetry_ack"
+    if (
+        normalized_values[0]
+        and normalized_values[0] == normalized_values[1]
+        and re.fullmatch(
+            r"[a-z0-9]+(?:[_-][a-z0-9]+)*_(?:ok|ready|pass|success)",
+            normalized_values[0],
+        )
+    ):
+        return "low_information_runtime_marker:%s" % normalized_values[0]
     return None
 
 
@@ -409,11 +418,40 @@ class ControlPlane(object):
             raise
 
     def finish_event(self, event_id, result):
+        event_row = self.conn.execute(
+            "SELECT event_type,created_at FROM events WHERE event_id=?", (event_id,)
+        ).fetchone()
         self.conn.execute(
             """UPDATE events SET status='done', lease_until=NULL, completed_at=?, updated_at=?,
                  result_json=?, last_error=NULL WHERE event_id=?""",
             (iso_now(), iso_now(), json.dumps(result, ensure_ascii=False), event_id),
         )
+        if event_row:
+            self.resolve_recovered_dead_event_alerts(
+                event_row["event_type"], event_row["created_at"], event_id
+            )
+
+    def resolve_recovered_dead_event_alerts(self, event_type, success_created_at, success_event_id):
+        """Resolve an older same-type dead-letter alert after a newer success."""
+        rows = self.conn.execute(
+            "SELECT fingerprint FROM alerts WHERE status='active' AND fingerprint LIKE 'dead-event:%'"
+        ).fetchall()
+        for row in rows:
+            fingerprint = row["fingerprint"]
+            dead_event_id = fingerprint[len("dead-event:") :]
+            if dead_event_id == success_event_id:
+                continue
+            dead_event = self.conn.execute(
+                "SELECT event_type,status,created_at FROM events WHERE event_id=?",
+                (dead_event_id,),
+            ).fetchone()
+            if not dead_event:
+                continue
+            if dead_event["event_type"] != event_type or dead_event["status"] != "dead":
+                continue
+            if str(dead_event["created_at"]) >= str(success_created_at):
+                continue
+            self.resolve_alert(fingerprint)
 
     def fail_event(self, event, error):
         attempts = int(event["attempts"])

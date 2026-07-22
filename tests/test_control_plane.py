@@ -81,6 +81,40 @@ class ClawwardenControlPlaneTests(unittest.TestCase):
         self.assertEqual(state, "dead")
         self.assertEqual(len(self.control.notifications), 1)
 
+    def test_newer_same_type_success_resolves_dead_letter_alert(self):
+        self.control.enqueue("event-dead", "unknown", {}, max_attempts=1)
+        dead = dict(self.control.claim())
+        self.control.conn.execute(
+            "UPDATE events SET created_at='2026-01-01T00:00:00+00:00' WHERE event_id='event-dead'"
+        )
+        self.assertEqual(self.control.fail_event(dead, "boom"), "dead")
+        self.control.enqueue("event-recovered", "unknown", {})
+        self.control.conn.execute(
+            "UPDATE events SET created_at='2026-01-02T00:00:00+00:00' WHERE event_id='event-recovered'"
+        )
+        self.control.finish_event("event-recovered", {"ok": True})
+        alert = self.control.conn.execute(
+            "SELECT status FROM alerts WHERE fingerprint='dead-event:event-dead'"
+        ).fetchone()
+        self.assertEqual(alert[0], "resolved")
+
+    def test_success_does_not_resolve_other_event_type_alert(self):
+        self.control.enqueue("event-dead", "health", {}, max_attempts=1)
+        dead = dict(self.control.claim())
+        self.control.conn.execute(
+            "UPDATE events SET created_at='2026-01-01T00:00:00+00:00' WHERE event_id='event-dead'"
+        )
+        self.assertEqual(self.control.fail_event(dead, "boom"), "dead")
+        self.control.enqueue("event-other", "unknown", {})
+        self.control.conn.execute(
+            "UPDATE events SET created_at='2026-01-02T00:00:00+00:00' WHERE event_id='event-other'"
+        )
+        self.control.finish_event("event-other", {"ok": True})
+        alert = self.control.conn.execute(
+            "SELECT status FROM alerts WHERE fingerprint='dead-event:event-dead'"
+        ).fetchone()
+        self.assertEqual(alert[0], "active")
+
     def test_expired_lease_is_reclaimed(self):
         self.control.enqueue("event-lease", "health", {})
         self.control.claim()
@@ -190,6 +224,15 @@ class ClawwardenControlPlaneTests(unittest.TestCase):
             )
         finally:
             MODULE.MEMORY_CANDIDATE_DIR = old_dir
+
+    def test_generic_runtime_ack_is_low_information_only_when_both_fields_match(self):
+        self.assertEqual(
+            MODULE.low_information_memory_reason("worker_ready", "worker_ready"),
+            "low_information_runtime_marker:worker_ready",
+        )
+        self.assertIsNone(
+            MODULE.low_information_memory_reason("worker_ready", "worker completed migration")
+        )
 
     def test_low_information_finish_suppresses_memory_candidate(self):
         self.control.upsert_runtime_run(

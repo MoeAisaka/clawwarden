@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-22
+
+### Fixed
+
+- Resolve stale dead-letter alerts only after a newer event of the same type completes successfully.
+- Archive duplicate low-information runtime markers such as worker_ready without suppressing meaningful content.
+
 ### Documentation
 
 - Record compatibility validation against the stable OpenClaw `2026.7.1` release.
